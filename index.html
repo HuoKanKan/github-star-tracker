@@ -144,6 +144,12 @@
         .card-sub { font-size: 12px; color: #94A3B8; }
         .chart-container { position: relative; width: 100%; height: 420px; margin-bottom: 20px; }
         .chart-container canvas { width: 100% !important; height: 100% !important; }
+        @media (max-width: 768px) {
+            .chart-container { height: 300px; }
+        }
+        @media (max-width: 480px) {
+            .chart-container { height: 250px; }
+        }
         .stats-table { width: 100%; border-collapse: collapse; font-size: 13px; }
         .stats-table th, .stats-table td { text-align: left; padding: 12px 10px; border-bottom: 1px solid #F1F5F9; }
         .stats-table th { font-weight: 600; background: #F8FAFE; color: #475569; }
@@ -371,33 +377,7 @@
             return response.json();
         }
         async function fetchStargazersPage(repo, page) {
-            return githubFetch(`https://api.github.com/repos/${repo}/stargazers?per_page=100&page=${page}`);
-        }
-        async function getLastPage(repo, totalStars) {
-            const token = getToken();
-            const headers = { 'Accept': 'application/vnd.github.v3.star+json' };
-            if (token) headers['Authorization'] = `token ${token}`;
-            const headResp = await fetch(`https://api.github.com/repos/${repo}/stargazers?per_page=100&page=1`, { headers });
-            const link = headResp.headers.get('link');
-            if (link) {
-                const matches = link.match(/page=(\d+)>; rel="last"/);
-                if (matches) return parseInt(matches[1]);
-            }
-            return Math.max(1, Math.ceil(totalStars / 100));
-        }
-        async function findBoundaryPage(repo, startTime, lastPage) {
-            let low = 1, high = lastPage, boundary = lastPage;
-            while (low <= high) {
-                const mid = Math.floor((low + high) / 2);
-                const data = await fetchStargazersPage(repo, mid);
-                if (!data.length) break;
-                const firstTime = data[0].starred_at;
-                const lastTime = data[data.length - 1].starred_at;
-                if (lastTime < startTime) low = mid + 1;
-                else if (firstTime >= startTime) { boundary = mid; high = mid - 1; }
-                else { boundary = mid; break; }
-            }
-            return Math.min(boundary, lastPage);
+            return githubFetch(`https://api.github.com/repos/${repo}/stargazers?per_page=100&page=${page}&direction=desc`);
         }
         async function fetchStarsLast30Days() {
             const repo = getRepo();
@@ -407,18 +387,11 @@
             const thirtyDaysAgo = new Date();
             thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
             const startTime = thirtyDaysAgo.toISOString();
-            const lastPage = await getLastPage(repo, totalStars);
-            if (lastPage > 400) {
-                hideLoading();
-                showStatus(`⚠️ ${repo} 有 ${totalStars.toLocaleString()} Stars，超过 GitHub API 限制（最多 40,000 条）。无法获取最近 30 天数据，请选择 Star 数较少的仓库。`, 'error');
-                return { totalStars, stars: [] };
-            }
-            const boundaryPage = await findBoundaryPage(repo, startTime, lastPage);
             let allStars = [];
-            const totalPages = lastPage - boundaryPage + 1;
-            for (let page = boundaryPage; page <= lastPage; page++) {
-                const progress = 10 + Math.round(((page - boundaryPage) / totalPages) * 80);
-                showLoading(`正在获取 Star 数据：${page - boundaryPage + 1}/${totalPages} 页`, progress);
+            const maxPages = 400;
+            for (let page = 1; page <= maxPages; page++) {
+                const progress = 10 + Math.round((page / maxPages) * 80);
+                showLoading(`正在获取 Star 数据：第 ${page} 页`, progress);
                 let retries = 3;
                 let data = [];
                 while (retries > 0) {
@@ -432,9 +405,16 @@
                     }
                 }
                 if (!data.length) break;
-                data.forEach(item => {
-                    if (item.starred_at >= startTime) allStars.push({ starred_at: item.starred_at });
-                });
+                let hasOldData = false;
+                for (const item of data) {
+                    if (item.starred_at >= startTime) {
+                        allStars.push({ starred_at: item.starred_at });
+                    } else {
+                        hasOldData = true;
+                        break;
+                    }
+                }
+                if (hasOldData) break;
                 if (page % 10 === 0) await new Promise(r => setTimeout(r, 200));
             }
             showLoading('数据处理中...', 95);
@@ -503,6 +483,7 @@
             const dates = dailyData.map(d => d.date.slice(5));
             const totals = dailyData.map(d => d.total);
             const deltas = dailyData.map((d,i) => i===0 ? null : d.delta);
+            const isMobile = window.innerWidth <= 768;
             if (starChartInstance) starChartInstance.destroy();
             const ctx = document.getElementById('starChart').getContext('2d');
             starChartInstance = new Chart(ctx, {
@@ -511,11 +492,11 @@
                     labels: dates,
                     datasets: [
                         { label: '每日增量', data: deltas, type: 'bar', yAxisID: 'y-delta',
-                          backgroundColor: 'rgba(30, 111, 223, 0.5)', borderColor: '#1E6FDF', borderWidth: 1, borderRadius: 6, order: 2,
-                          categoryPercentage: 0.7, barPercentage: 0.7, maxBarThickness: 20 },
+                          backgroundColor: 'rgba(30, 111, 223, 0.5)', borderColor: '#1E6FDF', borderWidth: isMobile ? 0 : 1, borderRadius: isMobile ? 4 : 6, order: 2,
+                          categoryPercentage: isMobile ? 0.85 : 0.7, barPercentage: isMobile ? 0.9 : 0.7, maxBarThickness: isMobile ? 12 : 20 },
                         { label: 'Star 总数', data: totals, type: 'line', yAxisID: 'y',
-                          borderColor: '#F97316', backgroundColor: 'rgba(249,115,22,0.1)', borderWidth: 3,
-                          pointRadius: 3, pointBackgroundColor: '#F97316', pointBorderColor: '#fff', pointBorderWidth: 2,
+                          borderColor: '#F97316', backgroundColor: 'rgba(249,115,22,0.1)', borderWidth: isMobile ? 2 : 3,
+                          pointRadius: isMobile ? 2 : 3, pointBackgroundColor: '#F97316', pointBorderColor: '#fff', pointBorderWidth: isMobile ? 1 : 2,
                           tension: 0.3, fill: true, order: 1 }
                     ]
                 },
@@ -523,14 +504,14 @@
                     responsive: true, maintainAspectRatio: true,
                     interaction: { mode: 'index', intersect: false },
                     plugins: {
-                        legend: { position: 'top', labels: { usePointStyle: true, padding: 20 } },
-                        tooltip: { mode: 'index', intersect: false, backgroundColor: 'rgba(15, 23, 42, 0.9)', padding: 12, cornerRadius: 8 },
-                        zoom: { pan: { enabled: true, mode: 'x', speed: 5 }, zoom: { wheel: { enabled: true }, pinch: { enabled: true }, mode: 'x' } }
+                        legend: { position: 'top', labels: { usePointStyle: true, padding: isMobile ? 12 : 20, font: { size: isMobile ? 11 : 12 } } },
+                        tooltip: { mode: 'index', intersect: false, backgroundColor: 'rgba(15, 23, 42, 0.9)', padding: 12, cornerRadius: 8, titleFont: { size: isMobile ? 12 : 13 }, bodyFont: { size: isMobile ? 11 : 12 } },
+                        zoom: { pan: { enabled: true, mode: 'x', speed: 5 }, zoom: { wheel: { enabled: !isMobile }, pinch: { enabled: true }, mode: 'x' } }
                     },
                     scales: {
-                        x: { ticks: { maxRotation: 45, autoSkip: true, maxTicksLimit: 10 }, grid: { display: false } },
-                        y: { position: 'left', title: { display: true, text: 'Star 总数', color: '#64748B', font: { weight: '600' } }, ticks: { callback: v => v.toLocaleString(), color: '#64748B' }, grid: { color: '#F1F5F9' } },
-                        'y-delta': { position: 'right', title: { display: true, text: '每日增量', color: '#1E6FDF', font: { weight: '600' } }, grid: { drawOnChartArea: false }, min: 0, ticks: { color: '#1E6FDF' } }
+                        x: { ticks: { maxRotation: isMobile ? 0 : 45, autoSkip: true, maxTicksLimit: isMobile ? 6 : 10, font: { size: isMobile ? 10 : 11 } }, grid: { display: false } },
+                        y: { position: 'left', title: { display: !isMobile, text: 'Star 总数', color: '#64748B', font: { weight: '600', size: isMobile ? 10 : 12 } }, ticks: { callback: v => v.toLocaleString(), color: '#64748B', font: { size: isMobile ? 10 : 11 } }, grid: { color: '#F1F5F9' } },
+                        'y-delta': { position: 'right', title: { display: !isMobile, text: '每日增量', color: '#1E6FDF', font: { weight: '600', size: isMobile ? 10 : 12 } }, grid: { drawOnChartArea: false }, min: 0, ticks: { color: '#1E6FDF', font: { size: isMobile ? 10 : 11 } } }
                     }
                 }
             });
