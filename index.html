@@ -4,10 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
     <title>GitHub Star 增长看板（近30天）</title>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/hammerjs@2.0.8/hammer.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1/dist/chartjs-plugin-zoom.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -132,7 +128,11 @@
             -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
         }
         .metric-card .sub { font-size: 13px; color: #10B981; margin-top: 8px; font-weight: 500; }
-        .chart-card, .table-card {
+        .metric-card .highlight {
+            background: linear-gradient(135deg, #10B981 0%, #059669 100%);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+        }
+        .table-card {
             background: #FFFFFF; border-radius: 24px; box-shadow: 0 8px 24px rgba(0, 0, 0, 0.05);
             padding: 28px; margin-bottom: 32px; border: 1px solid #E9EEF5;
         }
@@ -142,47 +142,12 @@
         }
         .card-title { font-size: 18px; font-weight: 700; color: #0F172A; }
         .card-sub { font-size: 12px; color: #94A3B8; }
-        .chart-container { position: relative; width: 100%; height: 420px; margin-bottom: 20px; }
-        .chart-container canvas { width: 100% !important; height: 100% !important; }
-        @media (max-width: 768px) {
-            .chart-container { height: 300px; }
-        }
-        @media (max-width: 480px) {
-            .chart-container { height: 250px; }
-        }
         .stats-table { width: 100%; border-collapse: collapse; font-size: 13px; }
         .stats-table th, .stats-table td { text-align: left; padding: 12px 10px; border-bottom: 1px solid #F1F5F9; }
         .stats-table th { font-weight: 600; background: #F8FAFE; color: #475569; }
         .stats-table tr:hover { background: #F8FAFE; }
         .growth-positive { color: #10B981; font-weight: 600; }
         .growth-negative { color: #EF4444; font-weight: 600; }
-        .btn-group { display: flex; gap: 12px; justify-content: flex-end; margin-top: 20px; flex-wrap: wrap; }
-        .btn {
-            background: #F1F5F9; border: none; padding: 10px 20px; border-radius: 12px;
-            font-weight: 500; font-size: 13px; cursor: pointer; transition: all 0.2s; color: #475569;
-        }
-        .btn:hover { background: #E2E8F0; }
-        .btn-primary { background: linear-gradient(135deg, #1E6FDF 0%, #3B82F6 100%); color: white; }
-        .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(30,111,223,0.3); }
-        .export-modal {
-            position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5);
-            display: flex; justify-content: center; align-items: center; z-index: 1001;
-            opacity: 0; visibility: hidden; transition: all 0.3s ease;
-        }
-        .export-modal.active { opacity: 1; visibility: visible; }
-        .export-modal-content {
-            background: white; padding: 28px; border-radius: 20px;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.2); min-width: 300px;
-        }
-        .export-modal-title { font-size: 18px; font-weight: 700; color: #0F172A; margin-bottom: 20px; }
-        .export-options { display: flex; gap: 12px; }
-        .export-option {
-            flex: 1; padding: 16px; border: 2px solid #E2E8F0; border-radius: 12px;
-            cursor: pointer; transition: all 0.2s; text-align: center;
-        }
-        .export-option:hover { border-color: #1E6FDF; background: #F8FAFE; }
-        .export-option .format { font-size: 20px; font-weight: 700; color: #1E6FDF; margin-bottom: 4px; }
-        .export-option .desc { font-size: 12px; color: #64748B; }
         .footer { text-align: center; font-size: 12px; color: #94A3B8; margin-top: 40px; padding: 16px; }
         @media (max-width: 768px) {
             .header-top { flex-direction: column; }
@@ -216,7 +181,7 @@
                     <input type="password" id="githubToken" placeholder="ghp_xxx（可选，提高限额）">
                 </div>
                 <button id="saveTokenBtn">💾 保存配置</button>
-                <button id="refreshBtn">🔄 刷新数据</button>
+                <button id="refreshBtn"> 刷新数据</button>
             </div>
         </div>
         <div class="status-bar">
@@ -225,47 +190,56 @@
                 <span>仓库：<strong id="repoStatus">rustfs/rustfs</strong></span>
             </div>
             <div class="status-item">
-                <span class="icon">🔑</span>
+                <span class="icon"></span>
                 <span>状态：<span id="tokenStatus" class="status-badge warning">未配置 Token</span></span>
             </div>
         </div>
     </div>
     <div id="statusMsg" class="status-message">正在加载数据...</div>
     <div class="cards-grid" id="metricsPanel">
-        <div class="metric-card"><div class="label">最新 Star 总数</div><div class="value" id="totalStars">--</div><div class="sub" id="updateTime"></div></div>
-        <div class="metric-card"><div class="label">近30天增长</div><div class="value" id="totalGrowth">--</div><div class="sub" id="growthPercent"></div></div>
-        <div class="metric-card"><div class="label">日均增长</div><div class="value" id="avgDaily">--</div><div class="sub">stars/天</div></div>
-        <div class="metric-card"><div class="label">最高单日增幅</div><div class="value" id="maxDaily">--</div><div class="sub" id="maxDate"></div></div>
-    </div>
-    <div class="chart-card" id="chartCard">
-        <div class="card-header">
-            <div class="card-title">📈 Star 增长趋势（近30天）</div>
-            <div class="card-sub">折线：总数 | 柱状：每日增量</div>
+        <div class="metric-card">
+            <div class="label">最新 Star 总数</div>
+            <div class="value" id="totalStars">--</div>
+            <div class="sub" id="updateTime"></div>
         </div>
-        <div class="chart-container">
-            <canvas id="starChart"></canvas>
+        <div class="metric-card">
+            <div class="label">近30天累计增长</div>
+            <div class="value" id="totalGrowth">--</div>
+            <div class="sub" id="growthPercent"></div>
         </div>
-        <div class="btn-group">
-            <button class="btn" id="resetZoomBtn">🔍 重置缩放</button>
-            <button class="btn btn-primary" id="downloadChartBtn">📸 导出图表</button>
+        <div class="metric-card">
+            <div class="label">平均每天日增</div>
+            <div class="value" id="avgDaily">--</div>
+            <div class="sub">stars/天</div>
+        </div>
+        <div class="metric-card">
+            <div class="label">本周 vs 上周</div>
+            <div class="value" id="weekCompare">--</div>
+            <div class="sub" id="weekCompareSub"></div>
         </div>
     </div>
     <div class="table-card" id="tableCard">
         <div class="card-header">
-            <div class="card-title">📅 详细数据表</div>
-            <div class="card-sub">基于 GitHub 官方 Star 历史记录</div>
+            <div class="card-title">📅 每日增长数据表</div>
+            <div class="card-sub">近30天每日 Star 增长明细</div>
         </div>
         <div style="overflow-x: auto;">
             <table class="stats-table" id="dailyTable">
-                <thead><tr><th>日期</th><th>Star 总数</th><th>当日增量</th><th>环比增速</th></tr></thead>
-                <tbody id="tableBody"><tr><td colspan="4">加载中...</td></tr>
+                <thead>
+                    <tr>
+                        <th>日期</th>
+                        <th>当日新增</th>
+                        <th>累计总数</th>
+                        <th>环比增速</th>
+                    </tr>
+                </thead>
+                <tbody id="tableBody">
+                    <tr><td colspan="4">加载中...</td></tr>
+                </tbody>
             </table>
         </div>
-        <div class="btn-group">
-            <button class="btn btn-primary" id="downloadTableBtn">📸 导出表格</button>
-        </div>
     </div>
-    <div class="footer">💡 数据基于 GitHub 官方 API，取每日最后一条记录。已缓存1小时。可配置 Token 提升限额。</div>
+    <div class="footer">💡 数据基于 GitHub GraphQL API，取每日最后一条记录。已缓存1小时。可配置 Token 提升限额。</div>
 </div>
 <div class="loading-overlay" id="loadingOverlay">
     <div class="loading-spinner"></div>
@@ -274,31 +248,15 @@
         <div class="loading-progress-bar" id="loadingProgressBar"></div>
     </div>
 </div>
-<div class="export-modal" id="exportModal">
-    <div class="export-modal-content">
-        <div class="export-modal-title">选择导出格式</div>
-        <div class="export-options">
-            <div class="export-option" id="exportPng">
-                <div class="format">PNG</div>
-                <div class="desc">无损质量，文件较大</div>
-            </div>
-            <div class="export-option" id="exportJpg">
-                <div class="format">JPG</div>
-                <div class="desc">有损压缩，文件较小</div>
-            </div>
-        </div>
-    </div>
-</div>
 <script>
     (function() {
-        let starChartInstance = null;
         let currentDailyData = [];
-        let currentExportTarget = null;
         const STORAGE_KEY = 'github_star_data';
         const TOKEN_KEY = 'github_token';
         const REPO_KEY = 'github_repo';
         const DEFAULT_REPO = 'rustfs/rustfs';
         const CACHE_HOURS = 1;
+        const GRAPHQL_URL = 'https://api.github.com/graphql';
         const repoInput = document.getElementById('repoInput');
         const tokenInput = document.getElementById('githubToken');
         const saveTokenBtn = document.getElementById('saveTokenBtn');
@@ -310,14 +268,13 @@
         const totalGrowthSpan = document.getElementById('totalGrowth');
         const growthPercentSpan = document.getElementById('growthPercent');
         const avgDailySpan = document.getElementById('avgDaily');
-        const maxDailySpan = document.getElementById('maxDaily');
-        const maxDateSpan = document.getElementById('maxDate');
+        const weekCompareSpan = document.getElementById('weekCompare');
+        const weekCompareSubSpan = document.getElementById('weekCompareSub');
         const updateTimeSpan = document.getElementById('updateTime');
         const tableBody = document.getElementById('tableBody');
         const loadingOverlay = document.getElementById('loadingOverlay');
         const loadingText = document.getElementById('loadingText');
         const loadingProgressBar = document.getElementById('loadingProgressBar');
-        const exportModal = document.getElementById('exportModal');
 
         function showLoading(text = '正在获取数据...', progress = 0) {
             loadingText.textContent = text;
@@ -358,162 +315,219 @@
             tokenInput.placeholder = '已保存 Token';
             repoInput.placeholder = repo;
         }
-        async function githubFetch(url, options = {}) {
+        async function graphqlFetch(query, variables = {}) {
             const token = getToken();
-            const headers = Object.assign({}, options.headers || {});
-            if (!headers['Accept']) {
-                headers['Accept'] = url.includes('/stargazers')
-                    ? 'application/vnd.github.v3.star+json'
-                    : 'application/vnd.github.v3+json';
-            }
-            if (token) headers['Authorization'] = `token ${token}`;
-            const response = await fetch(url, Object.assign({}, options, { headers }));
+            const headers = { 'Content-Type': 'application/json' };
+            if (token) headers['Authorization'] = `Bearer ${token}`;
+            const response = await fetch(GRAPHQL_URL, {
+                method: 'POST',
+                headers,
+                body: JSON.stringify({ query, variables })
+            });
             if (!response.ok) {
                 const body = await response.text();
-                if (response.status === 403) throw new Error('API 限额已用完，请配置 GitHub Token 后重试');
-                if (response.status === 404) throw new Error('仓库不存在，请检查仓库名称');
-                throw new Error(`GitHub API 错误: ${response.status} ${response.statusText}`);
+                if (response.status === 401) throw new Error('Token 无效或已过期，请重新配置');
+                if (response.status === 403) throw new Error('API 限额已用完，请配置有效的 GitHub Token');
+                throw new Error(`GraphQL API 错误: ${response.status} ${response.statusText}`);
             }
-            return response.json();
+            const data = await response.json();
+            if (data.errors) {
+                const errorMsg = data.errors.map(e => e.message).join(', ');
+                if (errorMsg.includes('bad credentials') || errorMsg.includes('unauthorized')) {
+                    throw new Error('Token 无效或已过期，请重新配置');
+                }
+                throw new Error(`GraphQL 错误: ${errorMsg}`);
+            }
+            return data.data;
         }
-        async function fetchStargazersPage(repo, page) {
-            return githubFetch(`https://api.github.com/repos/${repo}/stargazers?per_page=100&page=${page}&direction=desc`);
-        }
-        async function fetchStarsLast30Days() {
+        async function fetchStarsLast30Days(sinceTime = null) {
             const repo = getRepo();
-            const repoInfo = await githubFetch(`https://api.github.com/repos/${repo}`);
-            const totalStars = repoInfo.stargazers_count;
-            showLoading(`正在获取 ${repo} 的 Star 数据 (共 ${totalStars.toLocaleString()} 条)...`, 10);
+            const [owner, name] = repo.split('/');
+            showLoading(`正在获取 ${repo} 的 Star 数据...`, 10);
             const thirtyDaysAgo = new Date();
             thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
             const startTime = thirtyDaysAgo.toISOString();
-            let allStars = [];
-            const maxPages = 400;
-            for (let page = 1; page <= maxPages; page++) {
-                const progress = 10 + Math.round((page / maxPages) * 80);
-                showLoading(`正在获取 Star 数据：第 ${page} 页`, progress);
-                let retries = 3;
-                let data = [];
-                while (retries > 0) {
-                    try {
-                        data = await fetchStargazersPage(repo, page);
-                        break;
-                    } catch (e) {
-                        retries--;
-                        if (retries === 0) throw e;
-                        await new Promise(r => setTimeout(r, 1000 * (3 - retries)));
+            const batchSize = 100;
+            const query = `
+                query($owner: String!, $name: String!) {
+                    repository(owner: $owner, name: $name) {
+                        stargazerCount
                     }
                 }
-                if (!data.length) break;
-                let hasOldData = false;
-                for (const item of data) {
-                    if (item.starred_at >= startTime) {
-                        allStars.push({ starred_at: item.starred_at });
-                    } else {
-                        hasOldData = true;
-                        break;
-                    }
-                }
-                if (hasOldData) break;
-                if (page % 10 === 0) await new Promise(r => setTimeout(r, 200));
+            `;
+            const data = await graphqlFetch(query, { owner, name });
+            const totalStars = data.repository.stargazerCount;
+            console.log(`仓库总 Star 数: ${totalStars}`);
+            console.log(`30天前的时间: ${startTime}`);
+            if (sinceTime) {
+                console.log(`增量更新：从 ${sinceTime} 开始获取`);
+                showLoading(`正在获取新增 Star 数据...`, 20);
+            } else {
+                showLoading(`正在获取近30天 Star 数据...`, 20);
             }
+            const allStars = [];
+            let cursor = null;
+            let pageCount = 0;
+            let hasNextPage = true;
+            const maxPages = 50;
+            const startTime_ms = Date.now();
+            const effectiveStartTime = sinceTime || startTime;
+            while (hasNextPage && pageCount < maxPages) {
+                pageCount++;
+                const fetchQuery = `
+                    query($owner: String!, $name: String!, $first: Int!, $after: String) {
+                        repository(owner: $owner, name: $name) {
+                            stargazers(first: $first, after: $after, orderBy: {field: STARRED_AT, direction: DESC}) {
+                                edges { starredAt }
+                                pageInfo { hasNextPage endCursor }
+                            }
+                        }
+                    }
+                `;
+                const variables = { owner, name, first: batchSize, after: cursor };
+                const pageStart = Date.now();
+                const pageData = await graphqlFetch(fetchQuery, variables);
+                const pageTime = Date.now() - pageStart;
+                const edges = pageData.repository.stargazers.edges;
+                const pageInfo = pageData.repository.stargazers.pageInfo;
+                let shouldStop = false;
+                for (const edge of edges) {
+                    const starredAt = edge.starredAt;
+                    if (starredAt >= effectiveStartTime) {
+                        allStars.push({ starred_at: starredAt });
+                    } else {
+                        shouldStop = true;
+                        break;
+                    }
+                }
+                hasNextPage = pageInfo.hasNextPage;
+                cursor = pageInfo.endCursor;
+                console.log(`第 ${pageCount} 批: ${edges.length} 条, 耗时 ${pageTime}ms`);
+                const progress = 20 + Math.round((pageCount / maxPages) * 75);
+                showLoading(`正在获取 Star 数据：第 ${pageCount} 批 (${pageTime}ms)`, progress);
+                if (shouldStop) break;
+            }
+            const totalTime = Date.now() - startTime_ms;
             showLoading('数据处理中...', 95);
-            allStars.sort((a,b) => new Date(a.starred_at) - new Date(b.starred_at));
-            return { totalStars, stars: allStars };
+            console.log(`总共获取了 ${allStars.length} 个 Star`);
+            console.log(`获取了 ${pageCount} 批数据`);
+            console.log(`总耗时: ${totalTime}ms`);
+            if (allStars.length > 0) {
+                console.log('最早的 Star:', allStars[allStars.length - 1].starred_at);
+                console.log('最新的 Star:', allStars[0].starred_at);
+            }
+            allStars.sort((a, b) => new Date(a.starred_at) - new Date(b.starred_at));
+            return { totalStars, stars: allStars, lastStarTime: allStars.length > 0 ? allStars[0].starred_at : null };
         }
         function computeDailyData(stars, totalStars) {
             const startDate = new Date();
             startDate.setDate(startDate.getDate() - 29);
+            startDate.setHours(0, 0, 0, 0);
             const dateCounts = new Map();
             stars.forEach(star => {
-                const date = star.starred_at.slice(0,10);
-                dateCounts.set(date, (dateCounts.get(date) || 0) + 1);
+                const date = new Date(star.starred_at);
+                const dateStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+                dateCounts.set(dateStr, (dateCounts.get(dateStr) || 0) + 1);
             });
             const baseStars = Math.max(0, totalStars - stars.length);
             const result = [];
             let cumulative = baseStars;
             const endDate = new Date();
+            endDate.setHours(23, 59, 59, 999);
             for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
-                const dateStr = d.toISOString().slice(0,10);
-                cumulative += dateCounts.get(dateStr) || 0;
-                result.push({ date: dateStr, total: cumulative });
+                const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+                const dailyCount = dateCounts.get(dateStr) || 0;
+                cumulative += dailyCount;
+                result.push({ date: dateStr, delta: dailyCount, total: cumulative });
             }
             for (let i = 0; i < result.length; i++) {
-                if (i === 0) { result[i].delta = 0; result[i].rate = null; }
-                else {
-                    result[i].delta = result[i].total - result[i-1].total;
-                    result[i].rate = result[i-1].total > 0 ? (result[i].delta / result[i-1].total * 100).toFixed(2) + '%' : '0.00%';
+                if (i === 0) {
+                    result[i].rate = null;
+                } else {
+                    result[i].rate = result[i - 1].total > 0
+                        ? (result[i].delta / result[i - 1].total * 100).toFixed(2) + '%'
+                        : '0.00%';
                 }
             }
             return result;
         }
-        function renderUI(dailyData) {
+        function renderUI(dailyData, totalStars) {
             if (!dailyData || dailyData.length === 0) return;
             currentDailyData = dailyData;
-            const last = dailyData[dailyData.length-1];
+            const last = dailyData[dailyData.length - 1];
             const first = dailyData[0];
             const totalGrowth = last.total - first.total;
-            const totalGrowthPercent = first.total > 0 ? (totalGrowth / first.total * 100).toFixed(2) : '0.00';
+            const starsBefore30Days = first.total;
+            const totalGrowthPercent = starsBefore30Days > 0
+                ? (totalGrowth / starsBefore30Days * 100).toFixed(2)
+                : '0.00';
             const days = dailyData.length - 1;
             const avgDaily = days > 0 ? (totalGrowth / days).toFixed(1) : '0';
-            let maxDelta = 0, maxDeltaDate = '';
-            for (let i=1; i<dailyData.length; i++) {
-                if (dailyData[i].delta > maxDelta) { maxDelta = dailyData[i].delta; maxDeltaDate = dailyData[i].date; }
-            }
-            totalStarsSpan.innerText = last.total.toLocaleString();
+            const today = new Date();
+            today.setHours(23, 59, 59, 999);
+            const dayOfWeek = today.getDay();
+            const daysSinceMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+            const thisWeekStart = new Date(today);
+            thisWeekStart.setDate(today.getDate() - daysSinceMonday);
+            thisWeekStart.setHours(0, 0, 0, 0);
+            const lastWeekStart = new Date(thisWeekStart);
+            lastWeekStart.setDate(lastWeekStart.getDate() - 7);
+            const lastWeekEnd = new Date(thisWeekStart);
+            lastWeekEnd.setDate(lastWeekEnd.getDate() - 1);
+            lastWeekEnd.setHours(23, 59, 59, 999);
+            const weekBeforeLastStart = new Date(lastWeekStart);
+            weekBeforeLastStart.setDate(weekBeforeLastStart.getDate() - 7);
+            const weekBeforeLastEnd = new Date(lastWeekStart);
+            weekBeforeLastEnd.setDate(weekBeforeLastEnd.getDate() - 1);
+            weekBeforeLastEnd.setHours(23, 59, 59, 999);
+            let thisWeekGrowth = 0;
+            let lastWeekGrowth = 0;
+            let weekBeforeLastGrowth = 0;
+            dailyData.forEach(item => {
+                const itemDate = new Date(item.date + 'T23:59:59');
+                if (itemDate >= thisWeekStart && itemDate <= today) {
+                    thisWeekGrowth += item.delta;
+                }
+                if (itemDate >= lastWeekStart && itemDate <= lastWeekEnd) {
+                    lastWeekGrowth += item.delta;
+                }
+                if (itemDate >= weekBeforeLastStart && itemDate <= weekBeforeLastEnd) {
+                    weekBeforeLastGrowth += item.delta;
+                }
+            });
+            const weekDiff = lastWeekGrowth - weekBeforeLastGrowth;
+            const weekPercent = weekBeforeLastGrowth > 0
+                ? ((weekDiff / weekBeforeLastGrowth) * 100).toFixed(1)
+                : '0.0';
+            const formatDate = (d) => `${d.getMonth() + 1}/${d.getDate()}`;
+            const weekRanges = `${formatDate(lastWeekStart)}-${formatDate(lastWeekEnd)} vs ${formatDate(weekBeforeLastStart)}-${formatDate(weekBeforeLastEnd)}`;
+            totalStarsSpan.innerText = totalStars.toLocaleString();
             totalGrowthSpan.innerText = totalGrowth > 0 ? `+${totalGrowth}` : `${totalGrowth}`;
             growthPercentSpan.innerText = `▲ ${totalGrowthPercent}%`;
             avgDailySpan.innerText = `~${avgDaily}`;
-            maxDailySpan.innerText = maxDelta > 0 ? `+${maxDelta}` : '0';
-            maxDateSpan.innerText = maxDeltaDate || '--';
+            if (weekDiff > 0) {
+                weekCompareSpan.innerHTML = `<span class="highlight">+${weekDiff}</span>`;
+                weekCompareSubSpan.innerHTML = `上周 ${lastWeekGrowth} | 上上周 ${weekBeforeLastGrowth} <span class="growth-positive">▲ ${weekPercent}%</span><br><span style="font-size:11px;color:#94A3B8">本周(${formatDate(thisWeekStart)}起) ${thisWeekGrowth}</span>`;
+            } else if (weekDiff < 0) {
+                weekCompareSpan.innerHTML = `<span class="growth-negative">${weekDiff}</span>`;
+                weekCompareSubSpan.innerHTML = `上周 ${lastWeekGrowth} | 上上周 ${weekBeforeLastGrowth} <span class="growth-negative">▼ ${Math.abs(weekPercent)}%</span><br><span style="font-size:11px;color:#94A3B8">本周(${formatDate(thisWeekStart)}起) ${thisWeekGrowth}</span>`;
+            } else {
+                weekCompareSpan.innerText = '0';
+                weekCompareSubSpan.innerHTML = `上周 ${lastWeekGrowth} | 上上周 ${weekBeforeLastGrowth}<br><span style="font-size:11px;color:#94A3B8">本周(${formatDate(thisWeekStart)}起) ${thisWeekGrowth}</span>`;
+            }
             updateTimeSpan.innerText = `更新: ${new Date().toLocaleString('zh-CN')}`;
             tableBody.innerHTML = '';
-            dailyData.forEach(item => {
+            dailyData.slice().reverse().forEach(item => {
                 const row = tableBody.insertRow();
-                row.insertCell(0).innerText = item.date.slice(5);
-                row.insertCell(1).innerText = item.total.toLocaleString();
-                const deltaCell = row.insertCell(2);
+                row.insertCell(0).innerText = item.date;
+                const deltaCell = row.insertCell(1);
                 if (item.delta > 0) deltaCell.innerHTML = `<span class="growth-positive">+${item.delta}</span>`;
                 else if (item.delta < 0) deltaCell.innerHTML = `<span class="growth-negative">${item.delta}</span>`;
                 else deltaCell.innerText = '—';
+                row.insertCell(2).innerText = item.total.toLocaleString();
                 const rateCell = row.insertCell(3);
                 if (item.rate) rateCell.innerHTML = `<span class="growth-positive">+${item.rate}</span>`;
                 else rateCell.innerText = '—';
-            });
-            const dates = dailyData.map(d => d.date.slice(5));
-            const totals = dailyData.map(d => d.total);
-            const deltas = dailyData.map((d,i) => i===0 ? null : d.delta);
-            const isMobile = window.innerWidth <= 768;
-            if (starChartInstance) starChartInstance.destroy();
-            const ctx = document.getElementById('starChart').getContext('2d');
-            starChartInstance = new Chart(ctx, {
-                type: 'bar',
-                data: {
-                    labels: dates,
-                    datasets: [
-                        { label: '每日增量', data: deltas, type: 'bar', yAxisID: 'y-delta',
-                          backgroundColor: 'rgba(30, 111, 223, 0.5)', borderColor: '#1E6FDF', borderWidth: isMobile ? 0 : 1, borderRadius: isMobile ? 4 : 6, order: 2,
-                          categoryPercentage: isMobile ? 0.85 : 0.7, barPercentage: isMobile ? 0.9 : 0.7, maxBarThickness: isMobile ? 12 : 20 },
-                        { label: 'Star 总数', data: totals, type: 'line', yAxisID: 'y',
-                          borderColor: '#F97316', backgroundColor: 'rgba(249,115,22,0.1)', borderWidth: isMobile ? 2 : 3,
-                          pointRadius: isMobile ? 2 : 3, pointBackgroundColor: '#F97316', pointBorderColor: '#fff', pointBorderWidth: isMobile ? 1 : 2,
-                          tension: 0.3, fill: true, order: 1 }
-                    ]
-                },
-                options: {
-                    responsive: true, maintainAspectRatio: true,
-                    interaction: { mode: 'index', intersect: false },
-                    plugins: {
-                        legend: { position: 'top', labels: { usePointStyle: true, padding: isMobile ? 12 : 20, font: { size: isMobile ? 11 : 12 } } },
-                        tooltip: { mode: 'index', intersect: false, backgroundColor: 'rgba(15, 23, 42, 0.9)', padding: 12, cornerRadius: 8, titleFont: { size: isMobile ? 12 : 13 }, bodyFont: { size: isMobile ? 11 : 12 } },
-                        zoom: { pan: { enabled: true, mode: 'x', speed: 5 }, zoom: { wheel: { enabled: !isMobile }, pinch: { enabled: true }, mode: 'x' } }
-                    },
-                    scales: {
-                        x: { ticks: { maxRotation: isMobile ? 0 : 45, autoSkip: true, maxTicksLimit: isMobile ? 6 : 10, font: { size: isMobile ? 10 : 11 } }, grid: { display: false } },
-                        y: { position: 'left', title: { display: !isMobile, text: 'Star 总数', color: '#64748B', font: { weight: '600', size: isMobile ? 10 : 12 } }, ticks: { callback: v => v.toLocaleString(), color: '#64748B', font: { size: isMobile ? 10 : 11 } }, grid: { color: '#F1F5F9' } },
-                        'y-delta': { position: 'right', title: { display: !isMobile, text: '每日增量', color: '#1E6FDF', font: { weight: '600', size: isMobile ? 10 : 12 } }, grid: { drawOnChartArea: false }, min: 0, ticks: { color: '#1E6FDF', font: { size: isMobile ? 10 : 11 } } }
-                    }
-                }
             });
             showStatus(`✅ 数据已更新 · 共 ${dailyData.length} 天数据`, 'success');
         }
@@ -524,26 +538,46 @@
             const now = Date.now();
             let cached = null;
             const cacheKey = getCacheKey(repo);
-            if (!forceRefresh) {
-                const raw = localStorage.getItem(cacheKey);
-                if (raw) {
-                    try {
-                        cached = JSON.parse(raw);
-                        if (cached && (now - cached.timestamp) < CACHE_HOURS * 3600 * 1000) {
-                            showStatus('📦 使用缓存数据（1小时内有效）', 'success');
-                            renderUI(cached.dailyData);
-                            refreshBtn.disabled = false;
-                            return;
-                        }
-                    } catch(e) {}
-                }
+            const raw = localStorage.getItem(cacheKey);
+            if (raw) {
+                try {
+                    cached = JSON.parse(raw);
+                } catch (e) {}
+            }
+            if (!forceRefresh && cached && (now - cached.timestamp) < CACHE_HOURS * 3600 * 1000) {
+                showStatus('📦 使用缓存数据（1小时内有效）', 'success');
+                renderUI(cached.dailyData, cached.totalStars);
+                refreshBtn.disabled = false;
+                return;
             }
             try {
-                const { totalStars, stars } = await fetchStarsLast30Days();
+                let stars = [];
+                let totalStars = 0;
+                if (cached && cached.lastStarTime && !forceRefresh) {
+                    const result = await fetchStarsLast30Days(cached.lastStarTime);
+                    const cachedStars = cached.stars || [];
+                    stars = [...cachedStars, ...result.stars];
+                    stars.sort((a, b) => new Date(a.starred_at) - new Date(b.starred_at));
+                    stars = stars.filter((star, index, self) =>
+                        index === self.findIndex(s => s.starred_at === star.starred_at)
+                    );
+                    totalStars = result.totalStars;
+                    console.log(`合并后共 ${stars.length} 个 Star（缓存 ${cachedStars.length} + 新增 ${result.stars.length}）`);
+                } else {
+                    const result = await fetchStarsLast30Days();
+                    stars = result.stars;
+                    totalStars = result.totalStars;
+                }
                 const dailyData = computeDailyData(stars, totalStars);
-                localStorage.setItem(cacheKey, JSON.stringify({ timestamp: now, dailyData: dailyData }));
+                localStorage.setItem(cacheKey, JSON.stringify({
+                    timestamp: now,
+                    dailyData: dailyData,
+                    totalStars: totalStars,
+                    stars: stars,
+                    lastStarTime: stars.length > 0 ? stars[stars.length - 1].starred_at : null
+                }));
                 hideLoading();
-                renderUI(dailyData);
+                renderUI(dailyData, totalStars);
             } catch (err) {
                 console.error(err);
                 hideLoading();
@@ -554,49 +588,15 @@
                 const retryBtn = document.getElementById('retryBtn');
                 if (retryBtn) retryBtn.addEventListener('click', () => loadData(true));
                 if (cached) {
-                    setTimeout(() => { showStatus('⚠️ 使用过期缓存数据', 'error'); renderUI(cached.dailyData); }, 2000);
+                    setTimeout(() => {
+                        showStatus('⚠️ 使用过期缓存数据', 'error');
+                        renderUI(cached.dailyData, cached.totalStars);
+                    }, 2000);
                 }
-            } finally { refreshBtn.disabled = false; }
-        }
-        document.getElementById('resetZoomBtn').addEventListener('click', () => {
-            if (starChartInstance) starChartInstance.resetZoom();
-        });
-        function formatRepoFilename(repo) {
-            return repo.replace(/[^a-zA-Z0-9]+/g, '_').replace(/^_+|_+$/g, '').toLowerCase();
-        }
-        async function downloadCard(element, filename, format = 'png') {
-            const originalHeight = element.style.height;
-            const originalOverflow = element.style.overflow;
-            element.style.height = 'auto';
-            element.style.overflow = 'visible';
-            await new Promise(r => requestAnimationFrame(r));
-            const canvas = await html2canvas(element, { scale: 2.5, backgroundColor: '#FFFFFF' });
-            element.style.height = originalHeight;
-            element.style.overflow = originalOverflow;
-            const link = document.createElement('a');
-            link.download = `${filename}.${format}`;
-            link.href = canvas.toDataURL(`image/${format}`, format === 'jpg' ? 0.92 : undefined);
-            link.click();
-        }
-        function openExportModal(target) { currentExportTarget = target; exportModal.classList.add('active'); }
-        function closeExportModal() { exportModal.classList.remove('active'); currentExportTarget = null; }
-        exportModal.addEventListener('click', (e) => { if (e.target === exportModal) closeExportModal(); });
-        document.getElementById('exportPng').addEventListener('click', () => {
-            if (currentExportTarget) {
-                const fileName = `${formatRepoFilename(getRepo())}_${currentExportTarget}`;
-                downloadCard(document.getElementById(currentExportTarget === 'chart' ? 'chartCard' : 'tableCard'), fileName, 'png');
+            } finally {
+                refreshBtn.disabled = false;
             }
-            closeExportModal();
-        });
-        document.getElementById('exportJpg').addEventListener('click', () => {
-            if (currentExportTarget) {
-                const fileName = `${formatRepoFilename(getRepo())}_${currentExportTarget}`;
-                downloadCard(document.getElementById(currentExportTarget === 'chart' ? 'chartCard' : 'tableCard'), fileName, 'jpg');
-            }
-            closeExportModal();
-        });
-        document.getElementById('downloadChartBtn').addEventListener('click', () => openExportModal('chart'));
-        document.getElementById('downloadTableBtn').addEventListener('click', () => openExportModal('table'));
+        }
         saveTokenBtn.addEventListener('click', saveConfig);
         refreshBtn.addEventListener('click', () => loadData(true));
         const savedToken = getToken();
