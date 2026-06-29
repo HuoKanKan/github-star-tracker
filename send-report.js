@@ -28,11 +28,18 @@ async function graphqlFetch(query, variables = {}) {
   return data.data;
 }
 
-async function fetchStars(sinceTime = null) {
+async function fetchStars() {
   const [owner, name] = REPO.split('/');
-  const thirtyDaysAgo = new Date();
-  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-  const startTime = sinceTime || thirtyDaysAgo.toISOString();
+  
+  // 使用固定的日期边界（当天0点到30天前的0点），确保每次运行结果一致
+  const now = new Date();
+  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
+  const thirtyDaysAgoStart = new Date(todayStart);
+  thirtyDaysAgoStart.setDate(thirtyDaysAgoStart.getDate() - 30);
+  
+  const startTime = thirtyDaysAgoStart.toISOString();
+  
+  console.log(`获取时间范围: ${startTime} 之后`);
   
   const allStars = [];
   let cursor = null;
