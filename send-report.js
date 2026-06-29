@@ -287,7 +287,7 @@ async function main() {
   
   await transporter.sendMail({
     from: EMAIL_FROM,
-    to: EMAIL_TO,
+    to: EMAIL_TO,  // 支持多个邮箱，用逗号分隔，如：a@test.com,b@test.com
     subject: `⭐ ${REPO} Star 周报 - ${new Date().toLocaleDateString('zh-CN')}`,
     html: emailHTML
   });
