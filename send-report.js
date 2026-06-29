@@ -7,7 +7,7 @@ const EMAIL_TO = process.env.EMAIL_TO || 'oracle_hkk@outlook.com';
 const EMAIL_PASSWORD = process.env.EMAIL_PASSWORD || 'QKhANG7ecCKd5rcA';
 
 async function graphqlFetch(query, variables = {}) {
-  const token = process.env.GITHUB_TOKEN;
+  const token = process.env.TOKEN;
   const headers = { 'Content-Type': 'application/json' };
   if (token) headers['Authorization'] = `Bearer ${token}`;
   
