@@ -5,15 +5,97 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
     <title>GitHub Star 增长看板（近30天）</title>
     <style>
+        :root {
+            --bg-primary: #0d1117;
+            --bg-secondary: #161b22;
+            --bg-tertiary: #21262d;
+            --border-color: #30363d;
+            --border-hover: #484f58;
+            --text-primary: #f0f6fc;
+            --text-secondary: #c9d1d9;
+            --text-muted: #8b949e;
+            --text-faint: #484f58;
+            --accent-blue: #58a6ff;
+            --accent-green: #3fb950;
+            --accent-red: #f85149;
+            --accent-yellow: #d29922;
+            --btn-primary-bg: #238636;
+            --btn-primary-border: #2ea043;
+            --btn-primary-hover: #2ea043;
+            --btn-secondary-bg: #21262d;
+            --btn-secondary-border: #30363d;
+            --btn-secondary-hover: #30363d;
+            --input-bg: #0d1117;
+            --input-border: #30363d;
+            --input-focus-border: #58a6ff;
+            --table-header-bg: #0d1117;
+            --table-hover-bg: #1c2129;
+            --card-shadow: none;
+            --loading-overlay-bg: rgba(13,17,23,0.85);
+            --spinner-border: #30363d;
+            --spinner-top: #58a6ff;
+            --progress-bg: #21262d;
+            --progress-bar: #58a6ff;
+            --status-bg: #161b22;
+            --status-success-bg: rgba(63,185,80,0.1);
+            --status-success-border: rgba(63,185,80,0.3);
+            --status-error-bg: rgba(248,81,73,0.1);
+            --status-error-border: rgba(248,81,73,0.3);
+            --badge-success-bg: rgba(63,185,80,0.15);
+            --badge-warning-bg: rgba(210,153,34,0.15);
+            --badge-error-bg: rgba(248,81,73,0.15);
+        }
+        .light-theme {
+            --bg-primary: #ffffff;
+            --bg-secondary: #f6f8fa;
+            --bg-tertiary: #eaeef2;
+            --border-color: #d0d7de;
+            --border-hover: #afb8c1;
+            --text-primary: #1f2328;
+            --text-secondary: #656d76;
+            --text-muted: #6e7781;
+            --text-faint: #8b949e;
+            --accent-blue: #0969da;
+            --accent-green: #1a7f37;
+            --accent-red: #cf222e;
+            --accent-yellow: #9a6700;
+            --btn-primary-bg: #2da44e;
+            --btn-primary-border: rgba(46,160,67,0.4);
+            --btn-primary-hover: #2c974b;
+            --btn-secondary-bg: #f6f8fa;
+            --btn-secondary-border: rgba(31,35,40,0.15);
+            --btn-secondary-hover: #f3f4f6;
+            --input-bg: #ffffff;
+            --input-border: #d0d7de;
+            --input-focus-border: #0969da;
+            --table-header-bg: #f6f8fa;
+            --table-hover-bg: #f6f8fa;
+            --card-shadow: 0 1px 3px rgba(31,35,40,0.04);
+            --loading-overlay-bg: rgba(255,255,255,0.85);
+            --spinner-border: #d0d7de;
+            --spinner-top: #0969da;
+            --progress-bg: #eaeef2;
+            --progress-bar: #0969da;
+            --status-bg: #f6f8fa;
+            --status-success-bg: rgba(46,160,67,0.1);
+            --status-success-border: rgba(46,160,67,0.3);
+            --status-error-bg: rgba(207,34,46,0.1);
+            --status-error-border: rgba(207,34,46,0.3);
+            --badge-success-bg: rgba(46,160,67,0.15);
+            --badge-warning-bg: rgba(154,103,0,0.15);
+            --badge-error-bg: rgba(207,34,46,0.15);
+        }
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
-            background: linear-gradient(135deg, #F1F5F9 0%, #E8EEF6 100%);
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background: var(--bg-primary);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
             padding: 40px 20px;
             display: flex;
             flex-direction: column;
             align-items: center;
             min-height: 100vh;
+            color: var(--text-secondary);
+            transition: background 0.3s ease, color 0.3s ease;
         }
         .container { max-width: 1280px; width: 100%; }
         .header { margin-bottom: 30px; }
@@ -27,128 +109,159 @@
         }
         h1 {
             font-size: 32px;
-            font-weight: 800;
-            background: linear-gradient(135deg, #1E6FDF 0%, #3B82F6 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
+            font-weight: 600;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
         }
-        .header-subtitle { font-size: 14px; color: #64748B; margin-top: 8px; }
+        h1 .octicon { color: var(--accent-blue); margin-right: 8px; }
+        .header-subtitle { font-size: 14px; color: var(--text-muted); margin-top: 8px; }
+        .theme-toggle {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 12px;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            background: var(--bg-secondary);
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.2s ease;
+        }
+        .theme-toggle:hover {
+            border-color: var(--border-hover);
+            background: var(--bg-tertiary);
+        }
+        .theme-toggle svg {
+            width: 16px;
+            height: 16px;
+            fill: currentColor;
+        }
         .config-panel {
-            background: #FFFFFF;
+            background: var(--bg-secondary);
             padding: 20px 24px;
-            border-radius: 20px;
-            box-shadow: 0 4px 20px rgba(15, 23, 42, 0.08);
-            border: 1px solid #E9EEF5;
+            border-radius: 6px;
+            border: 1px solid var(--border-color);
             margin-bottom: 16px;
+            transition: all 0.3s ease;
         }
         .config-row { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
         .config-row .field-group { display: flex; align-items: center; gap: 10px; flex: 1; min-width: 240px; }
-        .config-panel label { font-size: 14px; font-weight: 600; color: #475569; white-space: nowrap; }
+        .config-panel label { font-size: 14px; font-weight: 500; color: var(--text-secondary); white-space: nowrap; }
         .config-panel input {
-            flex: 1; min-width: 160px; border: 1px solid #E2E8F0; border-radius: 12px;
-            padding: 10px 16px; font-size: 14px; background: #F8FAFE; color: #0F172A;
+            flex: 1; min-width: 160px; border: 1px solid var(--input-border); border-radius: 6px;
+            padding: 8px 12px; font-size: 14px; background: var(--input-bg); color: var(--text-secondary);
             transition: all 0.2s ease; font-family: inherit;
         }
-        .config-panel input::placeholder { color: #94A3B8; }
+        .config-panel input::placeholder { color: var(--text-faint); }
         .config-panel input:focus {
-            outline: none; border-color: #1E6FDF; background: #ffffff;
-            box-shadow: 0 0 0 3px rgba(30,111,223,0.1);
+            outline: none; border-color: var(--input-focus-border); background: var(--input-bg);
+            box-shadow: 0 0 0 3px rgba(88,166,255,0.15);
+        }
+        .light-theme .config-panel input:focus {
+            box-shadow: 0 0 0 3px rgba(9,105,218,0.15);
         }
         .config-panel button {
-            border: none; padding: 10px 20px; border-radius: 12px; font-weight: 600;
+            border: 1px solid var(--btn-secondary-border); padding: 8px 16px; border-radius: 6px; font-weight: 500;
             font-size: 14px; cursor: pointer; transition: all 0.2s; white-space: nowrap;
+            background: var(--btn-secondary-bg); color: var(--text-secondary);
         }
-        #saveTokenBtn { background: #F1F5F9; color: #1E6FDF; border: 1px solid #E2E8F0; }
-        #saveTokenBtn:hover { background: #E2E8F0; transform: translateY(-1px); box-shadow: 0 4px 12px rgba(30,111,223,0.15); }
-        #refreshBtn { background: linear-gradient(135deg, #10B981 0%, #059669 100%); color: white; border: none; }
-        #refreshBtn:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(16,185,129,0.3); }
-        #refreshBtn:disabled { opacity: 0.6; cursor: not-allowed; transform: none; box-shadow: none; }
+        #saveTokenBtn:hover { background: var(--btn-secondary-hover); border-color: var(--border-hover); }
+        #refreshBtn { background: var(--btn-primary-bg); color: #ffffff; border: 1px solid var(--btn-primary-border); }
+        #refreshBtn:hover { background: var(--btn-primary-hover); }
+        #refreshBtn:disabled { opacity: 0.6; cursor: not-allowed; }
         .status-bar { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
         .status-item {
-            display: flex; align-items: center; gap: 8px; padding: 8px 16px;
-            background: #F8FAFE; border-radius: 12px; font-size: 13px; color: #475569; border: 1px solid #E9EEF5;
+            display: flex; align-items: center; gap: 8px; padding: 6px 12px;
+            background: var(--bg-secondary); border-radius: 6px; font-size: 13px; color: var(--text-muted); border: 1px solid var(--border-color);
+            transition: all 0.3s ease;
         }
-        .status-item .icon { font-size: 16px; }
-        .status-item strong { color: #0F172A; font-weight: 600; }
+        .status-item strong { color: var(--text-secondary); font-weight: 500; }
         .status-badge {
-            display: inline-flex; align-items: center; gap: 4px; padding: 4px 10px;
-            border-radius: 20px; font-size: 12px; font-weight: 600;
+            display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px;
+            border-radius: 12px; font-size: 12px; font-weight: 500;
         }
-        .status-badge.success { background: #D1FAE5; color: #065F46; }
-        .status-badge.warning { background: #FEF3C7; color: #92400E; }
-        .status-badge.error { background: #FEE2E2; color: #991B1B; }
+        .status-badge.success { background: var(--badge-success-bg); color: var(--accent-green); }
+        .status-badge.warning { background: var(--badge-warning-bg); color: var(--accent-yellow); }
+        .status-badge.error { background: var(--badge-error-bg); color: var(--accent-red); }
         .loading-overlay {
             position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-            background: rgba(255,255,255,0.9); display: flex; flex-direction: column;
+            background: var(--loading-overlay-bg); display: flex; flex-direction: column;
             justify-content: center; align-items: center; z-index: 1000;
             opacity: 0; visibility: hidden; transition: all 0.3s ease;
         }
         .loading-overlay.active { opacity: 1; visibility: visible; }
         .loading-spinner {
-            width: 48px; height: 48px; border: 4px solid #E2E8F0; border-top-color: #1E6FDF;
+            width: 48px; height: 48px; border: 4px solid var(--spinner-border); border-top-color: var(--spinner-top);
             border-radius: 50%; animation: spin 0.8s linear infinite; margin-bottom: 16px;
         }
         @keyframes spin { to { transform: rotate(360deg); } }
-        .loading-text { font-size: 14px; color: #64748B; font-weight: 500; }
+        .loading-text { font-size: 14px; color: var(--text-muted); font-weight: 500; }
         .loading-progress {
-            width: 200px; height: 4px; background: #E2E8F0; border-radius: 2px;
+            width: 200px; height: 4px; background: var(--progress-bg); border-radius: 2px;
             margin-top: 12px; overflow: hidden;
         }
         .loading-progress-bar {
-            height: 100%; background: linear-gradient(90deg, #1E6FDF, #3B82F6);
+            height: 100%; background: var(--progress-bar);
             border-radius: 2px; transition: width 0.3s ease; width: 0%;
         }
         .status-message {
-            font-size: 13px; color: #64748B; margin-top: 12px; text-align: center;
-            padding: 10px 16px; background: #FFFFFF; border-radius: 12px; border: 1px solid #E9EEF5;
+            font-size: 13px; color: var(--text-muted); margin-top: 12px; text-align: center;
+            padding: 10px 16px; background: var(--status-bg); border-radius: 6px; border: 1px solid var(--border-color);
+            transition: all 0.3s ease;
         }
-        .status-message.error { color: #DC2626; background: #FEF2F2; border-color: #FECACA; }
-        .status-message.success { color: #059669; background: #F0FDF4; border-color: #BBF7D0; }
+        .status-message.error { color: var(--accent-red); background: var(--status-error-bg); border-color: var(--status-error-border); }
+        .status-message.success { color: var(--accent-green); background: var(--status-success-bg); border-color: var(--status-success-border); }
         .retry-btn {
-            background: #1E6FDF; color: white; border: none; padding: 6px 16px;
-            border-radius: 8px; font-size: 13px; font-weight: 500; cursor: pointer;
+            background: var(--accent-blue); color: #ffffff; border: none; padding: 6px 16px;
+            border-radius: 6px; font-size: 13px; font-weight: 500; cursor: pointer;
             margin-left: 12px; transition: all 0.2s;
         }
-        .retry-btn:hover { background: #0F59B5; }
+        .retry-btn:hover { opacity: 0.85; }
         .cards-grid {
             display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-            gap: 20px; margin-bottom: 32px;
+            gap: 16px; margin-bottom: 24px;
         }
         .metric-card {
-            background: #FFFFFF; border-radius: 20px; padding: 24px;
-            box-shadow: 0 4px 16px rgba(0,0,0,0.05); text-align: center;
-            transition: all 0.2s ease; border: 1px solid #E9EEF5;
+            background: var(--bg-secondary); border-radius: 6px; padding: 24px;
+            text-align: center;
+            transition: all 0.2s ease; border: 1px solid var(--border-color);
+            box-shadow: var(--card-shadow);
         }
-        .metric-card:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,0.08); }
-        .metric-card .label { font-size: 13px; color: #64748B; margin-bottom: 10px; font-weight: 500; }
+        .metric-card:hover { border-color: var(--border-hover); }
+        .metric-card .label { font-size: 13px; color: var(--text-muted); margin-bottom: 10px; font-weight: 400; }
         .metric-card .value {
-            font-size: 36px; font-weight: 800;
-            background: linear-gradient(135deg, #1E6FDF 0%, #3B82F6 100%);
-            -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+            font-size: 36px; font-weight: 600;
+            color: var(--accent-blue);
         }
-        .metric-card .sub { font-size: 13px; color: #10B981; margin-top: 8px; font-weight: 500; }
+        .metric-card .sub { font-size: 13px; color: var(--accent-green); margin-top: 8px; font-weight: 500; }
         .metric-card .highlight {
-            background: linear-gradient(135deg, #10B981 0%, #059669 100%);
-            -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+            color: var(--accent-green);
+        }
+        .metric-card .negative {
+            color: var(--accent-red);
         }
         .table-card {
-            background: #FFFFFF; border-radius: 24px; box-shadow: 0 8px 24px rgba(0, 0, 0, 0.05);
-            padding: 28px; margin-bottom: 32px; border: 1px solid #E9EEF5;
+            background: var(--bg-secondary); border-radius: 6px;
+            padding: 24px; margin-bottom: 32px; border: 1px solid var(--border-color);
+            box-shadow: var(--card-shadow);
+            transition: all 0.3s ease;
         }
         .card-header {
             display: flex; justify-content: space-between; align-items: baseline;
-            margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid #F1F5F9;
+            margin-bottom: 16px; padding-bottom: 16px; border-bottom: 1px solid var(--border-color);
         }
-        .card-title { font-size: 18px; font-weight: 700; color: #0F172A; }
-        .card-sub { font-size: 12px; color: #94A3B8; }
+        .card-title { font-size: 16px; font-weight: 600; color: var(--text-primary); }
+        .card-sub { font-size: 12px; color: var(--text-faint); }
         .stats-table { width: 100%; border-collapse: collapse; font-size: 13px; }
-        .stats-table th, .stats-table td { text-align: left; padding: 12px 10px; border-bottom: 1px solid #F1F5F9; }
-        .stats-table th { font-weight: 600; background: #F8FAFE; color: #475569; }
-        .stats-table tr:hover { background: #F8FAFE; }
-        .growth-positive { color: #10B981; font-weight: 600; }
-        .growth-negative { color: #EF4444; font-weight: 600; }
-        .footer { text-align: center; font-size: 12px; color: #94A3B8; margin-top: 40px; padding: 16px; }
+        .stats-table th, .stats-table td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--border-color); }
+        .stats-table th { font-weight: 600; background: var(--table-header-bg); color: var(--text-muted); }
+        .stats-table tr:hover { background: var(--table-hover-bg); }
+        .stats-table td { color: var(--text-secondary); }
+        .growth-positive { color: var(--accent-green); font-weight: 600; }
+        .growth-negative { color: var(--accent-red); font-weight: 600; }
+        .footer { text-align: center; font-size: 12px; color: var(--text-faint); margin-top: 40px; padding: 16px; }
         @media (max-width: 768px) {
             .header-top { flex-direction: column; }
             .config-row { flex-direction: column; align-items: stretch; }
@@ -166,31 +279,33 @@
     <div class="header">
         <div class="header-top">
             <div>
-                <h1>⭐ GitHub Star 增长看板</h1>
+                <h1><svg class="octicon" width="32" height="32" viewBox="0 0 16 16" fill="currentColor" style="vertical-align: middle; margin-right: 8px;"><path d="M8 .25a.75.75 0 0 1 .673.418l1.882 3.815 4.21.612a.75.75 0 0 1 .416 1.279l-3.046 2.97.719 4.192a.751.751 0 0 1-1.088.791L8 12.347l-3.766 1.98a.75.75 0 0 1-1.088-.79l.72-4.194L.818 6.374a.75.75 0 0 1 .416-1.28l4.21-.611L7.327.668A.75.75 0 0 1 8 .25Z"/></svg>GitHub Star 增长看板</h1>
                 <div class="header-subtitle">支持任意 GitHub 仓库的 Star 近30天增长分析</div>
             </div>
+            <button class="theme-toggle" id="themeToggle" title="切换主题">
+                <svg id="themeIcon" viewBox="0 0 16 16"><path d="M6 .278a.768.768 0 0 1 .08.858 7.208 7.208 0 0 0-.878 3.46c0 4.021 3.278 7.277 7.318 7.277.527 0 1.04-.055 1.533-.16a.787.787 0 0 1 .81.316.733.733 0 0 1-.031.893A8.349 8.349 0 0 1 8.344 16C3.734 16 0 12.286 0 7.71 0 4.266 2.114 1.312 5.124.06A.752.752 0 0 1 6 .278Z"/></svg>
+                <span id="themeText">浅色</span>
+            </button>
         </div>
         <div class="config-panel">
             <div class="config-row">
                 <div class="field-group">
-                    <label for="repoInput">📦 仓库</label>
+                    <label for="repoInput">仓库</label>
                     <input type="text" id="repoInput" placeholder="owner/repo（默认 rustfs/rustfs）">
                 </div>
                 <div class="field-group">
-                    <label for="githubToken">🔑 Token</label>
+                    <label for="githubToken">Token</label>
                     <input type="password" id="githubToken" placeholder="ghp_xxx（可选，提高限额）">
                 </div>
-                <button id="saveTokenBtn">💾 保存配置</button>
-                <button id="refreshBtn"> 刷新数据</button>
+                <button id="saveTokenBtn">保存配置</button>
+                <button id="refreshBtn">刷新数据</button>
             </div>
         </div>
         <div class="status-bar">
             <div class="status-item">
-                <span class="icon">📦</span>
                 <span>仓库：<strong id="repoStatus">rustfs/rustfs</strong></span>
             </div>
             <div class="status-item">
-                <span class="icon"></span>
                 <span>状态：<span id="tokenStatus" class="status-badge warning">未配置 Token</span></span>
             </div>
         </div>
@@ -213,14 +328,14 @@
             <div class="sub">stars/天</div>
         </div>
         <div class="metric-card">
-            <div class="label">本周 vs 上周</div>
+            <div class="label">上周 vs 上上周</div>
             <div class="value" id="weekCompare">--</div>
             <div class="sub" id="weekCompareSub"></div>
         </div>
     </div>
     <div class="table-card" id="tableCard">
         <div class="card-header">
-            <div class="card-title">📅 每日增长数据表</div>
+            <div class="card-title">每日增长数据表</div>
             <div class="card-sub">近30天每日 Star 增长明细</div>
         </div>
         <div style="overflow-x: auto;">
@@ -230,16 +345,15 @@
                         <th>日期</th>
                         <th>当日新增</th>
                         <th>累计总数</th>
-                        <th>环比增速</th>
                     </tr>
                 </thead>
                 <tbody id="tableBody">
-                    <tr><td colspan="4">加载中...</td></tr>
+                    <tr><td colspan="3">加载中...</td></tr>
                 </tbody>
             </table>
         </div>
     </div>
-    <div class="footer">💡 数据基于 GitHub GraphQL API，取每日最后一条记录。已缓存1小时。可配置 Token 提升限额。</div>
+    <div class="footer">数据基于 GitHub GraphQL API，取每日最后一条记录。已缓存1小时。可配置 Token 提升限额。</div>
 </div>
 <div class="loading-overlay" id="loadingOverlay">
     <div class="loading-spinner"></div>
@@ -275,6 +389,29 @@
         const loadingOverlay = document.getElementById('loadingOverlay');
         const loadingText = document.getElementById('loadingText');
         const loadingProgressBar = document.getElementById('loadingProgressBar');
+        const themeToggle = document.getElementById('themeToggle');
+        const themeIcon = document.getElementById('themeIcon');
+        const themeText = document.getElementById('themeText');
+
+        // 主题切换
+        const THEME_KEY = 'github_star_theme';
+        const MOON_PATH = 'M6 .278a.768.768 0 0 1 .08.858 7.208 7.208 0 0 0-.878 3.46c0 4.021 3.278 7.277 7.318 7.277.527 0 1.04-.055 1.533-.16a.787.787 0 0 1 .81.316.733.733 0 0 1-.031.893A8.349 8.349 0 0 1 8.344 16C3.734 16 0 12.286 0 7.71 0 4.266 2.114 1.312 5.124.06A.752.752 0 0 1 6 .278Z';
+        const SUN_PATH = 'M8 11a3 3 0 1 1 0-6 3 3 0 0 1 0 6Zm5 0a1 1 0 0 0 1-1V9a1 1 0 0 0-2 0v1a1 1 0 0 0 1 1Zm-5 5a1 1 0 0 0 1-1v-1a1 1 0 0 0-2 0v1a1 1 0 0 0 1 1Zm5-5a1 1 0 0 0 1-1V9a1 1 0 0 0-2 0v1a1 1 0 0 0 1 1ZM5.05 5.05a1 1 0 0 0 1.41-1.41L5.76 2.93a1 1 0 0 0-1.41 1.41l.7.71Zm7.9 7.9a1 1 0 0 0 1.41-1.41l-.7-.71a1 1 0 0 0-1.41 1.41l.7.71Zm-7.9 0a1 1 0 0 0-1.41-1.41l-.7.71a1 1 0 0 0 1.41 1.41l.7-.71ZM11 8a1 1 0 0 0 1-1h1a1 1 0 0 0 0-2h-1a1 1 0 0 0-1 1v1a1 1 0 0 0 1 1ZM5 8a1 1 0 0 0-1-1H3a1 1 0 0 0 0 2h1a1 1 0 0 0 1-1Z';
+
+        function setTheme(isDark) {
+            document.body.classList.toggle('light-theme', !isDark);
+            themeIcon.querySelector('path').setAttribute('d', isDark ? MOON_PATH : SUN_PATH);
+            themeText.textContent = isDark ? '浅色' : '深色';
+            localStorage.setItem(THEME_KEY, isDark ? 'dark' : 'light');
+        }
+
+        // 初始化主题
+        const savedTheme = localStorage.getItem(THEME_KEY);
+        setTheme(savedTheme !== 'light');
+        themeToggle.addEventListener('click', () => {
+            const isDark = !document.body.classList.contains('light-theme');
+            setTheme(!isDark);
+        });
 
         function showLoading(text = '正在获取数据...', progress = 0) {
             loadingText.textContent = text;
@@ -507,13 +644,13 @@
             avgDailySpan.innerText = `~${avgDaily}`;
             if (weekDiff > 0) {
                 weekCompareSpan.innerHTML = `<span class="highlight">+${weekDiff}</span>`;
-                weekCompareSubSpan.innerHTML = `上周 ${lastWeekGrowth} | 上上周 ${weekBeforeLastGrowth} <span class="growth-positive">▲ ${weekPercent}%</span><br><span style="font-size:11px;color:#94A3B8">本周(${formatDate(thisWeekStart)}起) ${thisWeekGrowth}</span>`;
+                weekCompareSubSpan.innerHTML = `上周 ${lastWeekGrowth} | 上上周 ${weekBeforeLastGrowth} <span class="growth-positive">▲ ${weekPercent}%</span><br><span style="font-size:11px;color:#484f58">本周(${formatDate(thisWeekStart)}起) ${thisWeekGrowth}</span>`;
             } else if (weekDiff < 0) {
-                weekCompareSpan.innerHTML = `<span class="growth-negative">${weekDiff}</span>`;
-                weekCompareSubSpan.innerHTML = `上周 ${lastWeekGrowth} | 上上周 ${weekBeforeLastGrowth} <span class="growth-negative">▼ ${Math.abs(weekPercent)}%</span><br><span style="font-size:11px;color:#94A3B8">本周(${formatDate(thisWeekStart)}起) ${thisWeekGrowth}</span>`;
+                weekCompareSpan.innerHTML = `<span class="negative">${weekDiff}</span>`;
+                weekCompareSubSpan.innerHTML = `上周 ${lastWeekGrowth} | 上上周 ${weekBeforeLastGrowth} <span class="growth-negative">▼ ${Math.abs(weekPercent)}%</span><br><span style="font-size:11px;color:#484f58">本周(${formatDate(thisWeekStart)}起) ${thisWeekGrowth}</span>`;
             } else {
                 weekCompareSpan.innerText = '0';
-                weekCompareSubSpan.innerHTML = `上周 ${lastWeekGrowth} | 上上周 ${weekBeforeLastGrowth}<br><span style="font-size:11px;color:#94A3B8">本周(${formatDate(thisWeekStart)}起) ${thisWeekGrowth}</span>`;
+                weekCompareSubSpan.innerHTML = `上周 ${lastWeekGrowth} | 上上周 ${weekBeforeLastGrowth}<br><span style="font-size:11px;color:#484f58">本周(${formatDate(thisWeekStart)}起) ${thisWeekGrowth}</span>`;
             }
             updateTimeSpan.innerText = `更新: ${new Date().toLocaleString('zh-CN')}`;
             tableBody.innerHTML = '';
@@ -525,11 +662,8 @@
                 else if (item.delta < 0) deltaCell.innerHTML = `<span class="growth-negative">${item.delta}</span>`;
                 else deltaCell.innerText = '—';
                 row.insertCell(2).innerText = item.total.toLocaleString();
-                const rateCell = row.insertCell(3);
-                if (item.rate) rateCell.innerHTML = `<span class="growth-positive">+${item.rate}</span>`;
-                else rateCell.innerText = '—';
             });
-            showStatus(`✅ 数据已更新 · 共 ${dailyData.length} 天数据`, 'success');
+            showStatus(`数据已更新 · 共 ${dailyData.length} 天数据`, 'success');
         }
         async function loadData(forceRefresh = false) {
             showConfigState();
@@ -582,14 +716,14 @@
                 console.error(err);
                 hideLoading();
                 const errorMsg = err.message.includes('限额')
-                    ? `❌ ${err.message}<button class="retry-btn" onclick="document.getElementById('githubToken').focus()">配置 Token</button>`
-                    : `❌ 获取失败: ${err.message}<button class="retry-btn" id="retryBtn">重试</button>`;
+                    ? `错误: ${err.message}<button class="retry-btn" onclick="document.getElementById('githubToken').focus()">配置 Token</button>`
+                    : `获取失败: ${err.message}<button class="retry-btn" id="retryBtn">重试</button>`;
                 showStatus(errorMsg, 'error');
                 const retryBtn = document.getElementById('retryBtn');
                 if (retryBtn) retryBtn.addEventListener('click', () => loadData(true));
                 if (cached) {
                     setTimeout(() => {
-                        showStatus('⚠️ 使用过期缓存数据', 'error');
+                        showStatus('使用过期缓存数据', 'error');
                         renderUI(cached.dailyData, cached.totalStars);
                     }, 2000);
                 }
